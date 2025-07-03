@@ -18,15 +18,15 @@ const userSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
-  password: {
-    type: String,
-    required: true,
-  },
   phone: {
     type: String,
     required: true,
     unique: true,
 },
+  password: {
+    type: String,
+    required: true,
+  },
   role: {
     type: String,
     enum: ["user", "admin", "superadmin", "employee"],
@@ -43,14 +43,16 @@ userSchema.pre("save", async function (next) {
 });
 
 userSchema.methods.generateAuthToken = function () {
-  const token = jwt.sign({ id: this._id, role: this.role }, process.env.JWT_SECRET, {
-    expiresIn: "7d",       
+  const token = jwt.sign({ id: this._id, username: this.username, role: this.role }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRATION || "1d",       
     });
     return token;
 }
 
-userSchema.methods.comparePassword = async function (candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+userSchema.methods.comparePassword = async function (password) {
+  return await bcrypt.compare(password, this.password);
 }
+
 const User = mongoose.model("User", userSchema);
+
 export default User;
