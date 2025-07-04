@@ -8,21 +8,32 @@ const userSchema = new mongoose.Schema({
     required: true,
     trim: true,
     },
-    username: {
-    type: String,
-    required: true,
-    unique: true,
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-  },
-  phone: {
-    type: String,
-    required: true,
-    unique: true,
-},
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    phone: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    address: {
+      type: String,
+      required: true,
+      trim: true, 
+    },
+    aadharCardNumber: {
+      type: String,
+      required: true,
+      unique: true,
+      validate: {
+        validator: function (v) {
+          return /^\d{12}$/.test(v); // Validate Aadhar card number format
+        },
+        message: props => `${props.value} is not a valid Aadhar card number!`
+      }
+    },
   password: {
     type: String,
     required: true,
@@ -38,6 +49,11 @@ userSchema.pre("save", async function (next) {
   if (this.isModified("password")) {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
+  }
+
+  if (this.isModified("aadharCardNumber")) {
+    const salt = await bcrypt.genSalt(12);
+    this.aadharCardNumber = await bcrypt.hash(this.aadharCardNumber, salt);
   }
   next();
 });

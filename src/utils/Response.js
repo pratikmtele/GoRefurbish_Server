@@ -3,6 +3,7 @@ class Response {
         this.statusCode = statusCode;
         this.message = message;
         this.data = data;
+        this.statusCode < 400 ? this.success = true : this.success = false;
     }
 } 
 

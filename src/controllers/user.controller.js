@@ -5,9 +5,9 @@ import asyncHandler from "../utils/asyncHandler.js";
 import EmailService from "../services/emailService.js";
 
 const signup = asyncHandler(async (req, res)=> {
-    const { fullName, username, email, phone, password, role } = req.body;
+    const { fullName, email, phone, address, idNumber, password, confirmPassword, role } = req.body;
 
-    if ([fullName, username, email, phone, password].some(field => field.trim() === "")) 
+    if ([fullName, email, address, phone, idNumber, password, confirmPassword].some(field => field.trim() === "")) 
         return res.status(400).json({ message: "All fields are required" });
 
     const validRoles = ["user", "admin", "superadmin", "employee"];
@@ -15,7 +15,13 @@ const signup = asyncHandler(async (req, res)=> {
         return res.status(400).json({ message: "Invalid role specified" });
     }
 
-    const isUserExisting = await User.findOne({ $or: [{ email }, { username }] }).select("_id");
+    const isPasswordValid = password === confirmPassword;
+    
+    if (!isPasswordValid) { 
+        return res.status(400).json({ message: "Passwords do not match" });
+    }
+
+    const isUserExisting = await User.findOne({ $or: [{ email }, {phone}, {aadharCardNumber: idNumber}] }).select("_id");
 
     if (isUserExisting) 
         return res.status(400).json({ message: "User already exists" });
@@ -25,9 +31,10 @@ const signup = asyncHandler(async (req, res)=> {
         // Create a new user instance
         const newUser = new User({
             fullName,
-            username,
             email,
+            address,
             phone,
+            aadharCardNumber: idNumber,
             password,
             role: role || "user"
         });
@@ -45,7 +52,6 @@ const signup = asyncHandler(async (req, res)=> {
         return res.status(response.statusCode).json(response);
     } catch (error) {
         console.log(error.message);
-        
         return res.status(500).json({ message: "Error creating user" });
     }
 });
@@ -71,23 +77,73 @@ const login = asyncHandler(async (req, res) => {
 
         const token = await user.generateAuthToken();
 
+      
+        const cookieOptions = {
+            httpOnly: true,
+            secure: false,
+            sameSite: 'lax', 
+            maxAge: 7 * 24 * 60 * 60 * 1000, 
+            path: '/',
+            domain: undefined
+        };
+
         const response = new Response(200, "Login successful", {
-            token,
+            token, 
             user: {
                 id: user._id,
                 fullName: user.fullName,
-                username: user.username,
                 email: user.email,
                 phone: user.phone,
+                address: user.address,
+                aadharCardNumber: user.aadharCardNumber,
                 role: user.role
             }
         });
 
-        return res.status(response.statusCode).cookie("authToken", token).json(response);
+        return res
+            .cookie("auth-token", token, cookieOptions)
+            .status(response.statusCode)
+            .json(response);
     } catch (error) {
         console.log(error);
-        
         return res.status(500).json({ message: "Error logging in" });
+    }
+});
+
+const getCurrentUser = asyncHandler(async (req, res) => {
+    try {
+        const user = req.user;
+
+        const isuservalid = await User.findById(user._id).select("-password -aadharCardNumber -__v");
+        
+        const response = new Response(200, "User retrieved successfully", isuservalid);
+        
+        return res.status(response.statusCode).json(response);
+    } catch (error) {
+        console.error('Get current user error:', error);
+        return res.status(500).json({ message: "Error retrieving user" });
+    }
+});
+
+const logout = asyncHandler(async (req, res) => {
+    try {
+        const response = new Response(200, "Logged out successfully", {
+            message: "You have been logged out successfully"
+        });
+
+        return res
+            .clearCookie("auth-token", {
+                httpOnly: true,
+                secure: false, // Match login cookie settings
+                sameSite: 'lax',
+                path: '/',
+                domain: undefined
+            })
+            .status(response.statusCode)
+            .json(response);
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: "Error logging out" });
     }
 });
 
@@ -257,4 +313,4 @@ const verifyOTP = asyncHandler(async (req, res) => {
     }
 });
 
-export { signup, login, forgotPassword, resetPassword, verifyOTP };
+export { signup, login, getCurrentUser, logout, forgotPassword, resetPassword, verifyOTP };
