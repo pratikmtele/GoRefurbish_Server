@@ -1,12 +1,13 @@
-import mongoose from "mongoose";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
-const userSchema = new mongoose.Schema({
-  fullName: {
-    type: String,
-    required: true,
-    trim: true,
+const userSchema = new mongoose.Schema(
+  {
+    fullName: {
+      type: String,
+      required: true,
+      trim: true,
     },
     email: {
       type: String,
@@ -21,7 +22,7 @@ const userSchema = new mongoose.Schema({
     address: {
       type: String,
       required: true,
-      trim: true, 
+      trim: true,
     },
     aadharCardNumber: {
       type: String,
@@ -31,27 +32,29 @@ const userSchema = new mongoose.Schema({
         validator: function (v) {
           return /^\d{12}$/.test(v); // Validate Aadhar card number format
         },
-        message: props => `${props.value} is not a valid Aadhar card number!`
-      }
+        message: props => `${props.value} is not a valid Aadhar card number!`,
+      },
     },
-  password: {
-    type: String,
-    required: true,
+    password: {
+      type: String,
+      required: true,
+    },
+    role: {
+      type: String,
+      enum: ['user', 'admin', 'superadmin', 'employee'],
+      default: 'user',
+    },
   },
-  role: {
-    type: String,
-    enum: ["user", "admin", "superadmin", "employee"],
-    default: "user",
-  },
-}, { timestamps: true });
+  { timestamps: true }
+);
 
-userSchema.pre("save", async function (next) {
-  if (this.isModified("password")) {
+userSchema.pre('save', async function (next) {
+  if (this.isModified('password')) {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
   }
 
-  if (this.isModified("aadharCardNumber")) {
+  if (this.isModified('aadharCardNumber')) {
     const salt = await bcrypt.genSalt(12);
     this.aadharCardNumber = await bcrypt.hash(this.aadharCardNumber, salt);
   }
@@ -59,16 +62,20 @@ userSchema.pre("save", async function (next) {
 });
 
 userSchema.methods.generateAuthToken = function () {
-  const token = jwt.sign({ id: this._id, username: this.username, role: this.role }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRATION || "1d",       
-    });
-    return token;
-}
+  const token = jwt.sign(
+    { _id: this._id, username: this.username, role: this.role },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: process.env.JWT_EXPIRATION || '1d',
+    }
+  );
+  return token;
+};
 
 userSchema.methods.comparePassword = async function (password) {
   return await bcrypt.compare(password, this.password);
-}
+};
 
-const User = mongoose.model("User", userSchema);
+const User = mongoose.model('User', userSchema);
 
 export default User;
