@@ -3,6 +3,7 @@ import OTP from '../models/otp.model.js';
 import Response from '../utils/Response.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import EmailService from '../services/emailService.js';
+import ApiError from '../utils/Error.js';
 
 const signup = asyncHandler(async (req, res) => {
   const {
@@ -74,20 +75,16 @@ const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
   if ([email, password].some(field => field.trim() === ''))
-    return res.status(400).json({ message: 'Email and password are required' });
+    throw new ApiError(400, 'Email and password are required');
 
   try {
     const user = await User.findOne({ email });
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    if (!user) throw new ApiError(404, 'User not found');
 
     const isPasswordCorrect = await user.comparePassword(password);
 
-    if (!isPasswordCorrect) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
+    if (!isPasswordCorrect) throw new ApiError(401, 'Invalid credentials');
 
     const token = await user.generateAuthToken();
 
