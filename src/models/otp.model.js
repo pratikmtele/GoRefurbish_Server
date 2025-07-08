@@ -27,7 +27,7 @@ const otpSchema = new mongoose.Schema({
   },
   expiresAt: {
     type: Date,
-    default: () => new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
+    default: () => new Date(Date.now() + 5 * 60 * 1000), // 5 minutes from now
     expires: 0 // MongoDB TTL for automatic cleanup
   }
 }, { 
@@ -37,7 +37,6 @@ const otpSchema = new mongoose.Schema({
 // Index for automatic cleanup
 otpSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-// Method to verify OTP
 otpSchema.methods.verifyOTP = function(providedOTP) {
   if (this.isUsed) {
     throw new Error('OTP has already been used');
