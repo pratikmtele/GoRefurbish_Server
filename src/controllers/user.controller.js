@@ -191,7 +191,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
       email: email.toLowerCase(),
       otp: otp,
       purpose: 'password-reset',
-      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
     });
 
     await otpRecord.save();
@@ -222,7 +222,6 @@ const forgotPassword = asyncHandler(async (req, res) => {
   }
 });
 
-// Reset Password - Verify OTP and Update Password
 const resetPassword = asyncHandler(async (req, res) => {
   const { email, otp, newPassword } = req.body;
 
@@ -239,7 +238,6 @@ const resetPassword = asyncHandler(async (req, res) => {
   }
 
   try {
-    // Find the OTP record
     const otpRecord = await OTP.findOne({
       email: email.toLowerCase(),
       purpose: 'password-reset',
@@ -291,7 +289,6 @@ const resetPassword = asyncHandler(async (req, res) => {
   }
 });
 
-// Verify OTP (without resetting password)
 const verifyOTP = asyncHandler(async (req, res) => {
   const { email, otp } = req.body;
 
