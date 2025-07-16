@@ -63,7 +63,11 @@ const signup = asyncHandler(async (req, res) => {
     }
 
     new EmailService().sendWelcomeEmail(email, fullName);
-    const response = new Response(200, 'User created successfully', isSaved);
+    const response = new Response(
+      200,
+      'User created successfully',
+      isSaved.toSafeObject()
+    );
     return res.status(response.statusCode).json(response);
   } catch (error) {
     console.log(error.message);
@@ -105,7 +109,7 @@ const login = asyncHandler(async (req, res) => {
         email: user.email,
         phone: user.phone,
         address: user.address,
-        aadharCardNumber: user.aadharCardNumber,
+        aadharCardNumber: user.getMaskedAadharNumber(),
         role: user.role,
       },
     });
@@ -124,16 +128,14 @@ const getCurrentUser = asyncHandler(async (req, res) => {
   try {
     const user = req.user;
 
-    if (!user) return res.json(new Response(401, 'Unauthorized', null));
+    if (!user) throw new ApiError(404, 'Unauthorized');
 
-    const isuservalid = await User.findById(user._id).select(
-      '-password -aadharCardNumber -__v'
-    );
+    const isuservalid = await User.findById(user._id).select('-password -__v');
 
     const response = new Response(
       200,
       'User retrieved successfully',
-      isuservalid
+      isuservalid.toSafeObject()
     );
 
     return res.status(response.statusCode).json(response);
