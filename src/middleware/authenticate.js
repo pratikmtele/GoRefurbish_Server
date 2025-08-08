@@ -2,7 +2,11 @@ import jwt from 'jsonwebtoken';
 import Response from '../utils/Response.js';
 
 const authenticate = (req, res, next) => {
-  const token = req.cookies['auth-token'];
+  const token =
+    req.cookies?.['auth-token'] ||
+    req.header('Authorization')?.replace('Bearer ', '') ||
+    req.body.token ||
+    req.query.token;
 
   if (token === undefined) next();
 

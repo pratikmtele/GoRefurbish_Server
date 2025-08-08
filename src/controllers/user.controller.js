@@ -106,8 +106,8 @@ const login = asyncHandler(async (req, res) => {
 
     const cookieOptions = {
       httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production',
       maxAge: 7 * 24 * 60 * 60 * 1000,
       path: '/',
       domain: undefined,
@@ -356,6 +356,42 @@ const verifyOTP = asyncHandler(async (req, res) => {
   }
 });
 
+const updateUserDetails = asyncHandler(async (req, res) => {
+  const { fullName, email, phone, address } = req.body;
+
+  if ([fullName, email, phone, address].some(field => field.trim() === ''))
+    return res.status(400).json({ message: 'All fields are required' });
+
+  const updatedUser = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        fullName,
+        email,
+        phone,
+        address,
+      },
+    },
+    {
+      new: true,
+      runValidators: true,
+    }
+  ).select('-password -__v');
+
+  if (!updatedUser)
+    return res.status(404).json({ message: 'Failed to update user' });
+
+  return res
+    .status(200)
+    .json(
+      new Response(
+        200,
+        'Details updated successfully',
+        updatedUser.toSafeObject()
+      )
+    );
+});
+
 export {
   signup,
   login,
@@ -364,4 +400,5 @@ export {
   forgotPassword,
   resetPassword,
   verifyOTP,
+  updateUserDetails,
 };

@@ -1,5 +1,14 @@
 import express from 'express';
-import { login, signup, logout, forgotPassword, resetPassword, verifyOTP, getCurrentUser } from '../controllers/user.controller.js';
+import {
+  login,
+  signup,
+  logout,
+  forgotPassword,
+  resetPassword,
+  verifyOTP,
+  getCurrentUser,
+  updateUserDetails,
+} from '../controllers/user.controller.js';
 import authenticate from '../middleware/authenticate.js';
 
 const userRouter = express.Router();
@@ -14,5 +23,6 @@ userRouter.post('/reset-password', resetPassword);
 
 // protected routes
 userRouter.get('/current', authenticate, getCurrentUser);
+userRouter.patch('/update', authenticate, updateUserDetails);
 
 export default userRouter;
