@@ -35,12 +35,24 @@ const signup = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Passwords do not match' });
   }
 
+  // Check for existing user by email and phone only
+  // Aadhar comparison needs to be done differently due to encryption
   const isUserExisting = await User.findOne({
-    $or: [{ email }, { phone }, { aadharCardNumber: idNumber }],
+    $or: [{ email }, { phone }],
   }).select('_id');
 
   if (isUserExisting)
     return res.status(400).json({ message: 'User already exists' });
+
+  // Check for existing Aadhar card number by comparing with all users
+  const allUsers = await User.find({}).select('aadharCardNumber');
+  for (const user of allUsers) {
+    if (user.compareAadharCardNumber(idNumber)) {
+      return res
+        .status(400)
+        .json({ message: 'User with this Aadhar card number already exists' });
+    }
+  }
 
   try {
     // Create a new user instance
@@ -126,16 +138,20 @@ const login = asyncHandler(async (req, res) => {
 
 const getCurrentUser = asyncHandler(async (req, res) => {
   try {
-    const user = req.user;
+    if (!req.user) throw new ApiError(404, 'Unauthorized');
 
-    if (!user) throw new ApiError(404, 'Unauthorized');
+    const user = await User.findById(req.user._id).select('-password -__v');
 
-    const isuservalid = await User.findById(user._id).select('-password -__v');
+    if (!user) {
+      throw new ApiError(404, 'User not found');
+    }
+
+    const safeUserData = user.toSafeObject();
 
     const response = new Response(
       200,
       'User retrieved successfully',
-      isuservalid.toSafeObject()
+      safeUserData
     );
 
     return res.status(response.statusCode).json(response);
@@ -154,7 +170,7 @@ const logout = asyncHandler(async (req, res) => {
     return res
       .clearCookie('auth-token', {
         httpOnly: true,
-        secure: false, // Match login cookie settings
+        secure: false,
         sameSite: 'lax',
         path: '/',
         domain: undefined,
@@ -167,7 +183,6 @@ const logout = asyncHandler(async (req, res) => {
   }
 });
 
-// Forgot Password - Send OTP
 const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
 

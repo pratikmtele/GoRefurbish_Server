@@ -43,7 +43,7 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const ALGORITHM = 'aes-256-cbc';
+const ALGORITHM = process.env.ALGORITHM || 'aes-256-cbc';
 const ENCRYPTION_KEY =
   process.env.ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
 
@@ -85,7 +85,6 @@ userSchema.pre('save', async function (next) {
     }
     this.aadharCardNumber = encryptAadhar(this.aadharCardNumber);
   }
-
   next();
 });
 
@@ -99,11 +98,15 @@ userSchema.methods.getDecryptedAadharNumber = function () {
 
 userSchema.methods.getMaskedAadharNumber = function () {
   try {
+    if (!this.aadharCardNumber) {
+      return null;
+    }
+
     const decrypted = this.getDecryptedAadharNumber();
-    // Show only last 4 digits: XXXX XXXX 1234
     return `XXXX XXXX ${decrypted.slice(-4)}`;
   } catch (error) {
-    return 'XXXX XXXX XXXX';
+    console.error('Error in getMaskedAadharNumber:', error.message);
+    return null;
   }
 };
 
@@ -133,31 +136,20 @@ userSchema.methods.comparePassword = async function (password) {
 
 userSchema.methods.toSafeObject = function () {
   const obj = this.toObject();
+  const maskedAadhar = this.getMaskedAadharNumber();
+
   return {
     _id: obj._id,
     fullName: obj.fullName,
     email: obj.email,
     phone: obj.phone,
     address: obj.address,
-    aadharCardNumber: this.getMaskedAadharNumber(),
+    aadharCardNumber: maskedAadhar,
     role: obj.role,
     createdAt: obj.createdAt,
     updatedAt: obj.updatedAt,
   };
 };
-
-// Transform function for JSON serialization
-userSchema.set('toJSON', {
-  transform: function (doc, ret) {
-    // Don't transform if password is excluded (meaning it's for API response)
-    if (!ret.password) {
-      ret.aadharCardNumber = doc.getMaskedAadharNumber();
-    }
-    delete ret.password;
-    delete ret.__v;
-    return ret;
-  },
-});
 
 const User = mongoose.model('User', userSchema);
 
