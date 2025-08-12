@@ -67,4 +67,20 @@ const uploadProduct = asyncHandler(async (req, res) => {
   }
 });
 
-export { uploadProduct };
+const getAllProducts = asyncHandler(async (req, res) => {
+  try {
+    const products = await Product.find();
+
+    if (products.length <= 0)
+      return res.status(200).json(new ApiError(200, 'No products found'));
+
+    return res
+      .status(200)
+      .json(new Response(200, 'products fetched successfully', products));
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json(new ApiError(500, error.message));
+  }
+});
+
+export { uploadProduct, getAllProducts };

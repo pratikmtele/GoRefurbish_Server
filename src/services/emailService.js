@@ -16,11 +16,11 @@ class EmailService {
       const mailOptions = {
         from: {
           name: 'GoRefurbish',
-          address: process.env.EMAIL_USER
+          address: process.env.EMAIL_USER,
         },
         to: to,
         subject: 'Password Reset OTP - GoRefurbish',
-        html: this.getOTPEmailTemplate(otp, fullName)
+        html: this.getOTPEmailTemplate(otp, fullName),
       };
 
       const result = await this.transporter.sendMail(mailOptions);
@@ -138,11 +138,11 @@ class EmailService {
       const mailOptions = {
         from: {
           name: 'GoRefurbish',
-          address: process.env.EMAIL_USER
+          address: process.env.EMAIL_USER,
         },
         to: to,
         subject: 'Welcome to GoRefurbish!',
-        html: this.getWelcomeEmailTemplate(fullName)
+        html: this.getWelcomeEmailTemplate(fullName),
       };
 
       const result = await this.transporter.sendMail(mailOptions);
@@ -237,18 +237,6 @@ class EmailService {
     </body>
     </html>
     `;
-  }
-
-  // Test email connection
-  async testConnection() {
-    try {
-      await this.transporter.verify();
-      console.log('Email service is ready to send emails');
-      return { success: true, message: 'Email service connected successfully' };
-    } catch (error) {
-      console.error('Email service connection failed:', error);
-      return { success: false, error: error.message };
-    }
   }
 }
 

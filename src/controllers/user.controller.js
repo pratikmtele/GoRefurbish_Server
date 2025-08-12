@@ -35,8 +35,6 @@ const signup = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Passwords do not match' });
   }
 
-  // Check for existing user by email and phone only
-  // Aadhar comparison needs to be done differently due to encryption
   const isUserExisting = await User.findOne({
     $or: [{ email }, { phone }],
   }).select('_id');
@@ -44,7 +42,6 @@ const signup = asyncHandler(async (req, res) => {
   if (isUserExisting)
     return res.status(400).json({ message: 'User already exists' });
 
-  // Check for existing Aadhar card number by comparing with all users
   const allUsers = await User.find({}).select('aadharCardNumber');
   for (const user of allUsers) {
     if (user.compareAadharCardNumber(idNumber)) {
@@ -55,7 +52,6 @@ const signup = asyncHandler(async (req, res) => {
   }
 
   try {
-    // Create a new user instance
     const newUser = new User({
       fullName,
       email,

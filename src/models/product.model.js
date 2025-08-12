@@ -45,9 +45,19 @@ const productSchema = new Schema(
       required: true,
       min: 0,
     },
+    notiablePrice: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     negotiable: {
       type: Boolean,
       default: true,
+    },
+    isApproved: {
+      type: String,
+      enum: ['Approved', 'Pending', 'Rejected'],
+      default: 'Pending',
     },
   },
   {
